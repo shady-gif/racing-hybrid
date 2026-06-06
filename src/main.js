@@ -7,7 +7,7 @@ import {
   loadGates, 
   updateGateFading, 
   checkGateProximity, 
-  showFinishMessage, 
+  showLapComplete,
 } from './modules/gates.js';
 import { 
   initMultiplayer, 
@@ -120,6 +120,7 @@ let raceState = {
 let raceTimer;
 let raceStartTime = 0;
 let timerInterval;
+let lapCounter;
 
 // Make raceState globally accessible for multiplayer.js
 window.raceState = raceState;
@@ -248,6 +249,26 @@ function createRaceTimer() {
   
   // Keep a reference to the content element for updating the timer
   raceTimer.contentElement = timerContent;
+}
+
+function createLapCounter() {
+  lapCounter = document.createElement('div');
+  lapCounter.id = 'lap-counter';
+  lapCounter.textContent = 'LAP 1';
+  lapCounter.style.position = 'absolute';
+  lapCounter.style.top = '78px';
+  lapCounter.style.left = '50%';
+  lapCounter.style.transform = 'translateX(-50%)';
+  lapCounter.style.padding = '6px 14px';
+  lapCounter.style.borderRadius = '7px';
+  lapCounter.style.background = 'rgba(0, 0, 0, 0.5)';
+  lapCounter.style.color = '#b5baff';
+  lapCounter.style.fontFamily = "'Poppins', sans-serif";
+  lapCounter.style.fontSize = '17px';
+  lapCounter.style.fontWeight = '800';
+  lapCounter.style.zIndex = '1000';
+  lapCounter.style.display = 'none';
+  document.body.appendChild(lapCounter);
 }
 
 // In createLeaderboard() function
@@ -528,6 +549,7 @@ function startCountdown() {
       leaderboard.style.display = 'block';
       
       // Start the race timer
+      lapCounter.style.display = 'block';
       startRaceTimer();
       
       // Broadcast race start to other players if host
@@ -1077,6 +1099,7 @@ function init() {
 
   createRaceUI();
   createRaceTimer();
+  createLapCounter();
   createLeaderboard();
   createSpectatorUI(); // Add this line
   
@@ -1239,7 +1262,7 @@ function animate() {
       }
       if (gateData) {
         // Check if player passed through a gate
-        const raceFinished = checkGateProximity(carModel, gateData);
+        const completedLap = checkGateProximity(carModel, gateData);
         
         // IMPORTANT: Update our local copies of the gate position for resets
         currentGatePosition.copy(gateData.currentGatePosition);
@@ -1248,23 +1271,9 @@ function animate() {
         // Make sure global reference is updated
         window.gateData = gateData;
         
-        // Show finish message if race is complete
-        if (raceFinished) {
-          // Only show finish message if we haven't already shown it
-          if (!raceState.raceFinished) {
-            showFinishMessage(gateData.totalGates, null); 
-            
-            // Stop the race timer
-            if (timerInterval) {
-              clearInterval(timerInterval);
-            }
-            
-            // In multiplayer mode, broadcast that you've finished
-            if (raceState.isMultiplayer && isHost) {
-              // Use existing broadcast mechanism or add a new one for race finish
-              multiplayerState.broadcastRaceStart(); 
-            }
-          }
+        if (completedLap) {
+          showLapComplete(completedLap);
+          lapCounter.textContent = `LAP ${completedLap + 1}`;
         }
         
         // Update gate fade effects

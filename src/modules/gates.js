@@ -14,6 +14,7 @@ export function loadGates(mapId, scene, loadingManager, onGatesLoaded) {
   const totalGates = 8;
   const currentGatePosition = new THREE.Vector3(0, 2, 0);
   const currentGateQuaternion = new THREE.Quaternion();
+  let completedLaps = 0;
   
   // Use the loading manager with your loader
   const loader = new GLTFLoader(loadingManager);
@@ -89,6 +90,7 @@ export function loadGates(mapId, scene, loadingManager, onGatesLoaded) {
           fadingGates,
           currentGateIndex,
           totalGates,
+          completedLaps,
           currentGatePosition,
           currentGateQuaternion
         });
@@ -106,6 +108,7 @@ export function loadGates(mapId, scene, loadingManager, onGatesLoaded) {
     fadingGates,
     currentGateIndex,
     totalGates,
+    completedLaps,
     currentGatePosition,
     currentGateQuaternion
   };
@@ -196,10 +199,11 @@ export function checkGateProximity(carModel, gateData) {
     // Mark gate as passed
     gate.userData.passed = true;
     
-    // If this is the finish gate
+    // Finishing a lap immediately prepares the checkpoint sequence again.
     if (gate.userData.isFinish) {
-      gateData.currentGateIndex++;
-      return true; // Signal race is finished
+      gateData.completedLaps += 1;
+      resetGatesForNextLap(gateData);
+      return gateData.completedLaps;
     } else {
       // Move to next gate
       gateData.currentGateIndex++;
@@ -211,7 +215,64 @@ export function checkGateProximity(carModel, gateData) {
     }
   }
   
-  return false; // Race not finished
+  return null;
+}
+
+function resetGatesForNextLap(gateData) {
+  gateData.gates.forEach((gate, index) => {
+    gate.userData.passed = false;
+    gate.visible = index === 0;
+    gate.traverse(child => {
+      if (child.isMesh) child.material.opacity = index === 0 ? 0 : 1;
+    });
+  });
+
+  Object.keys(gateData.fadingGates).forEach((key) => {
+    delete gateData.fadingGates[key];
+  });
+
+  gateData.currentGateIndex = 0;
+  startGateFadeIn(0, gateData.gates, gateData.fadingGates);
+}
+
+export function showLapComplete(completedLap) {
+  const previous = document.getElementById('lap-complete-ui');
+  previous?.remove();
+
+  const banner = document.createElement('div');
+  banner.id = 'lap-complete-ui';
+  banner.textContent = `LAP ${completedLap} COMPLETE`;
+  banner.style.position = 'absolute';
+  banner.style.top = '42%';
+  banner.style.left = '50%';
+  banner.style.transform = 'translate(-50%, -50%) scale(0.86)';
+  banner.style.padding = '14px 28px';
+  banner.style.borderRadius = '8px';
+  banner.style.background = 'rgba(0, 0, 0, 0.68)';
+  banner.style.color = '#b5baff';
+  banner.style.fontFamily = "'Poppins', sans-serif";
+  banner.style.fontSize = 'clamp(32px, 6vw, 72px)';
+  banner.style.fontWeight = '900';
+  banner.style.textAlign = 'center';
+  banner.style.whiteSpace = 'nowrap';
+  banner.style.textShadow = '0 0 18px rgba(181, 186, 255, 0.75)';
+  banner.style.boxShadow = '0 0 24px rgba(0, 0, 0, 0.45)';
+  banner.style.opacity = '0';
+  banner.style.transition = 'opacity 180ms ease, transform 180ms ease';
+  banner.style.zIndex = '1200';
+  banner.style.pointerEvents = 'none';
+  document.body.appendChild(banner);
+
+  requestAnimationFrame(() => {
+    banner.style.opacity = '1';
+    banner.style.transform = 'translate(-50%, -50%) scale(1)';
+  });
+
+  setTimeout(() => {
+    banner.style.opacity = '0';
+    banner.style.transform = 'translate(-50%, -50%) scale(1.08)';
+    setTimeout(() => banner.remove(), 220);
+  }, 1800);
 }
 
 // Function to show finish message
