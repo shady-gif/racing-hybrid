@@ -1134,10 +1134,14 @@ function hideLoadingScreen() {
 // Setup key controls for vehicle
 function setupKeyControls() {
   document.addEventListener('keydown', (event) => {
-    if (event.key.toLowerCase() === 'w') keyState.w = true;
-    if (event.key.toLowerCase() === 's') keyState.s = true;
-    if (event.key.toLowerCase() === 'a') keyState.a = true;
-    if (event.key.toLowerCase() === 'd') keyState.d = true;
+    if (event.key === 'ArrowUp') keyState.w = true;
+    if (event.key === 'ArrowDown') keyState.s = true;
+    if (event.key === 'ArrowLeft') keyState.a = true;
+    if (event.key === 'ArrowRight') keyState.d = true;
+
+    if (event.key.startsWith('Arrow')) {
+      event.preventDefault();
+    }
 
     // Replace the keydown R handler with this improved version:
     if (event.key.toLowerCase() === 'r') {
@@ -1165,10 +1169,14 @@ function setupKeyControls() {
   });
   
   document.addEventListener('keyup', (event) => {
-    if (event.key.toLowerCase() === 'w') keyState.w = false;
-    if (event.key.toLowerCase() === 's') keyState.s = false;
-    if (event.key.toLowerCase() === 'a') keyState.a = false;
-    if (event.key.toLowerCase() === 'd') keyState.d = false;
+    if (event.key === 'ArrowUp') keyState.w = false;
+    if (event.key === 'ArrowDown') keyState.s = false;
+    if (event.key === 'ArrowLeft') keyState.a = false;
+    if (event.key === 'ArrowRight') keyState.d = false;
+
+    if (event.key.startsWith('Arrow')) {
+      event.preventDefault();
+    }
   });
 }
 
